@@ -3,18 +3,34 @@ services:
   - docker
 
 before_install:
-  - docker build -t swapnil/react-test -f ./client/Dockerfile.dev
+  - docker build -t swapnilj01/react-test -f ./client/Dockerfile.dev ./client
 
 script:
-  - docker run -e CI=true swapnil/react-test npm test
+  - docker run swapnilj01/react-test npm test -- --coverage
 
 after_success:
-  - docker build -t swapnil/multi-client ./client
-  - docker build -t swapnil/multi-server ./server
-  - docker build -t swapnil/multi-nginx ./nginx
-  - docker build -t swapnil/multi-worker ./worker
+  - docker build -t swapnilj01/multi-client-10-14 ./client
+  - docker build -t swapnilj01/multi-nginx-10-14 ./nginx
+  - docker build -t swapnilj01/multi-server-10-14 ./server
+  - docker build -t swapnilj01/multi-worker-10-14 ./worker
+
+  # Log in to the docker CLI
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
-  - docker push swapnil/multi-client
-  - docker push swapnil/multi-server
-  - docker push swapnil/multi-nginx
-  - docker push swapnil/multi-worker
+
+  # Take those images and push them to docker hub
+  - docker push swapnilj01/multi-client-10-14
+  - docker push swapnilj01/multi-nginx-10-14
+  - docker push swapnilj01/multi-server-10-14
+  - docker push swapnilj01/multi-worker-10-14
+
+deploy:
+  provider: elasticbeanstalk
+  region: "ap-south-1"
+  app: "multi-docker"
+  env: "MultiDocker-env"
+  bucket_name: "elasticbeanstalk-ap-south-1-302304551949"
+  bucket_path: "docker-multi"
+  on:
+    branch: master
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key: "$AWS_SECRET_KEY"
